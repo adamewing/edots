@@ -1,0 +1,21 @@
+Expression divergence over time series
+
+Author: Adam Ewing (adam.ewing@gmail.com)
+
+======================================
+
+Method for selecting gene subsets that maximize a divergence score over a subset of consecutive timepoints
+
+Requires a matrix of expression values, columns must be samples and rows must be gene names (could be arbitrary intervals)
+
+Prerequisites
+======================================
+
+Python (2.7 or greater):
+numpy
+scipy
+pandas
+matplotlib
+
+R:
+limma

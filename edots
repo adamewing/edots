@@ -1,0 +1,69 @@
+#!/bin/sh
+
+usage () 
+{
+    echo "\nusage: $0 <expression matrix csv> <output directory>\n"
+    echo "expression matrix should be comma-seperated values"
+    echo "columns must correspond to samples and rows must"
+    echo "correspond to genes or other annotations\n"
+}
+
+if [ $# -ne 2 ]
+then
+    usage
+    exit 65
+fi
+
+ext=`echo $1 | awk -F"." '{print $NF}'`
+if [ $ext != "csv" ]
+then
+    echo "\nfilename ($1) must end in .csv (comma-seperated values)\n"
+    usage
+    exit 65
+fi
+
+if [ ! -d $2 ]
+then
+    echo "creating output directory $2"
+    mkdir $2
+fi
+
+if [ -e $1 ]
+then
+    qnfn=`echo $1 | sed -e 's/csv$/quantilenorm.csv/'`
+    echo "quantile normalizing $1 --> $qnfn" 
+    scripts/quantile_normalize.R $1
+    if [ ! -e $qnfn ]
+    then
+        echo "*** quantile normalization failed\n"
+        usage
+        exit 1
+    fi
+
+    mv $qnfn $2/`basename $qnfn`
+    qnfn=$2/`basename $qnfn`
+
+    dvg=`echo $qnfn | sed -e 's/\quantilenorm\.csv$/diverge.txt/'`
+    echo "calculating divergence ==> $dvg"
+    scripts/maxdiverge.py $qnfn 100 > $dvg
+
+   if [ ! -e $dvg ]
+    then
+        echo "*** maxdiverge.py failed\n"
+        usage
+        exit 1 
+    fi
+
+    echo "generating genesets..."
+    scripts/generate_peak_genesets.py $dvg $2/peak_genesets
+
+    for geneset in `ls -1 $2/peak_genesets/max*.txt`
+    do
+        scripts/plot_average.py $qnfn $geneset $2/png
+    done
+
+else
+    echo "\nfile not found: $1\n"
+    usage
+    exit 65
+fi
